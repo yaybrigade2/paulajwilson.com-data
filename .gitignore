@@ -1,0 +1,8 @@
+node_modules/
+.sass-cache/
+package-lock.json
+_notes/
+dwsync.xml
+css/build/
+.vscode/
+sftp.json
