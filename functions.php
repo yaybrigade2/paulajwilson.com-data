@@ -138,3 +138,79 @@ function paulawilsondata_flush_rest() {
 add_action( 'save_post',	'paulawilsondata_flush_rest' );
 add_action( 'trashed_post',	'paulawilsondata_flush_rest' );
 add_action( 'deleted_post',	'paulawilsondata_flush_rest' );
+
+
+
+
+
+/*  ******************************************** */
+/*  Image Size Presets 
+*/
+function candlewooddata_filter_image_sizes( $sizes) { /* Deactivate some default sizes we don't need */
+    unset( $sizes['large']);
+
+    return $sizes;
+}
+add_filter('intermediate_image_sizes_advanced', 'candlewooddata_filter_image_sizes');
+
+
+/*  ******************************************** */
+/*  Custom formatting tags for admin editor
+*/
+function candlewooddata_formatTinyMCE($in) {
+	$in['block_formats'] = "Paragraph=p;Header=h2;Sub Header=h3";
+	return $in;
+  }
+add_filter('tiny_mce_before_init', 'candlewooddata_formatTinyMCE' );
+  
+
+/*  ******************************************** */
+/*  Add a 'Very Simple' WYSIWYG option to ACF
+*/
+function candlewooddata_WYSIWYG_toolbars( $toolbars )
+{
+	// Uncomment to view format of $toolbars
+	/*
+	echo '< pre >';
+		print_r($toolbars);
+	echo '< /pre >';
+	die;
+	*/
+
+	// New toolbar: "Very Simple"
+	$toolbars['Very Simple' ] = array();
+	$toolbars['Very Simple' ][1] = array('bold' , 'italic'); // [1]=this toolbar has only 1 row of buttons
+	
+	// New toolbar: "Very Simple with Link"
+	$toolbars['Very Simple with Link' ] = array();
+	$toolbars['Very Simple with Link' ][1] = array('bold' , 'italic', 'link', 'unlink');
+
+	return $toolbars;
+}
+add_filter( 'acf/fields/wysiwyg/toolbars' , 'candlewooddata_WYSIWYG_toolbars'  );
+
+
+/*  ******************************************** */
+/*  Remove Media Attachement fields from backend (Image title, caption, and description)
+*/
+function candlewooddata_remove_media_attachement_fields() {
+	echo '<style type="text/css">
+			.setting[data-setting=title] {display:none !important;}
+			.setting[data-setting=caption] {display:none !important;}
+			.setting[data-setting=description] {display:none !important;}
+		  </style>';
+ }
+ add_action('admin_head', 'candlewooddata_remove_media_attachement_fields');
+
+
+/*  ******************************************** */
+/*  Remove certain options from admin menu bar ("new post", etc) 
+ */
+add_action( 'admin_bar_menu', 'remove_wp_nodes', 999 );
+function remove_wp_nodes() 
+{
+    global $wp_admin_bar;   
+    $wp_admin_bar->remove_node( 'new-post' );
+    $wp_admin_bar->remove_node( 'new-media' );
+    $wp_admin_bar->remove_node( 'new-user' );
+}
