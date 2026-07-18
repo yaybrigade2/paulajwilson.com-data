@@ -64,6 +64,57 @@ add_action( 'rest_api_init', function () {
 
 
 /*  ******************************************** */
+/*  ANCHOR REST for PAGE DETAIL
+/*  https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/page/test
+*/
+function rest_page( $data ) {
+	
+	global $post;
+
+	$slug = $data['slug'];
+	
+	$args = [
+		'post_type' => 'page',
+		'name' => $slug,
+	];	
+	$page_query = new WP_Query($args);
+
+	if ( $page_query->have_posts() ) : 
+
+		if ( $page_query->have_posts() ) : $page_query->the_post(); 
+
+			$id = $post->post_name; /* slug */
+			$title = $post->post_title;
+			$content_modules = get_field('content_modules');			
+
+			// PUT IT ALL TOGETHER
+			$page = array(
+				'id' => $id,
+				'title' => $title,
+				'contentModules' => $content_modules,
+			);
+			
+			$jsonObj = $page;
+			return $jsonObj;
+			
+		endif; 
+
+	endif;
+
+}
+add_action( 'rest_api_init', function () {
+  register_rest_route( 'paulawilsondata/v1', '/page/(?P<slug>[\w-]+)', array(
+	'methods' => 'GET',
+	'callback' => 'rest_page',
+	'permission_callback' => '__return_true',
+	'args' => [
+        'slug'
+    ],	
+  ));
+});
+
+
+/*  ******************************************** */
 /*  ANCHOR REST for sitemap URLs
 /*  Example: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/urls
 */
@@ -130,6 +181,7 @@ add_filter( 'wp_rest_cache/allowed_endpoints', 'wprc_add_custom_endpoints', 10, 
  * Flush REST cache
  */
 function paulawilsondata_flush_rest() {
+	// TODO: Add other endpoints to flush as needed
 	if( is_plugin_active( 'wp-rest-cache/wp-rest-cache.php' ) ) {
 		// https://wordpress.org/support/topic/how-to-flush-cache-on-custom-endpoints/
 		\WP_Rest_Cache_Plugin\Includes\Caching\Caching::get_instance()->delete_cache_by_endpoint( '/data/wp-json/paulawilsondata/v1/projects', 'strict', false );
@@ -146,28 +198,28 @@ add_action( 'deleted_post',	'paulawilsondata_flush_rest' );
 /*  ******************************************** */
 /*  Image Size Presets 
 */
-function candlewooddata_filter_image_sizes( $sizes) { /* Deactivate some default sizes we don't need */
+function paulawilsondata_filter_image_sizes( $sizes) { /* Deactivate some default sizes we don't need */
     unset( $sizes['large']);
 
     return $sizes;
 }
-add_filter('intermediate_image_sizes_advanced', 'candlewooddata_filter_image_sizes');
+add_filter('intermediate_image_sizes_advanced', 'paulawilsondata_filter_image_sizes');
 
 
 /*  ******************************************** */
 /*  Custom formatting tags for admin editor
 */
-function candlewooddata_formatTinyMCE($in) {
+function paulawilsondata_formatTinyMCE($in) {
 	$in['block_formats'] = "Paragraph=p;Header=h2;Sub Header=h3";
 	return $in;
   }
-add_filter('tiny_mce_before_init', 'candlewooddata_formatTinyMCE' );
+add_filter('tiny_mce_before_init', 'paulawilsondata_formatTinyMCE' );
   
 
 /*  ******************************************** */
 /*  Add a 'Very Simple' WYSIWYG option to ACF
 */
-function candlewooddata_WYSIWYG_toolbars( $toolbars )
+function paulawilsondata_WYSIWYG_toolbars( $toolbars )
 {
 	// Uncomment to view format of $toolbars
 	/*
@@ -187,20 +239,20 @@ function candlewooddata_WYSIWYG_toolbars( $toolbars )
 
 	return $toolbars;
 }
-add_filter( 'acf/fields/wysiwyg/toolbars' , 'candlewooddata_WYSIWYG_toolbars'  );
+add_filter( 'acf/fields/wysiwyg/toolbars' , 'paulawilsondata_WYSIWYG_toolbars'  );
 
 
 /*  ******************************************** */
 /*  Remove Media Attachement fields from backend (Image title, caption, and description)
 */
-function candlewooddata_remove_media_attachement_fields() {
+function paulawilsondata_remove_media_attachement_fields() {
 	echo '<style type="text/css">
 			.setting[data-setting=title] {display:none !important;}
 			.setting[data-setting=caption] {display:none !important;}
 			.setting[data-setting=description] {display:none !important;}
 		  </style>';
  }
- add_action('admin_head', 'candlewooddata_remove_media_attachement_fields');
+ add_action('admin_head', 'paulawilsondata_remove_media_attachement_fields');
 
 
 /*  ******************************************** */
