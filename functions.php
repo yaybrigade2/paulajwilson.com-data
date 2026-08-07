@@ -5,9 +5,7 @@
 
 
 /*  ******************************************** */
-/*  ANCHOR: Add generic REST endpoints for WORKS
-/*  Collection: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works
-/*  Detail: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works/exhibition/we-dream-of-life-iris-hu-and-paula-wilson
+/*  ANCHOR: Add REST endpoints for WORKS
 */
 
 function paulawilsondata_get_work_type_map() {
@@ -47,6 +45,8 @@ function paulawilsondata_prepare_work_data( $post_id, $include_fields_for_detail
 }
 
 // Works Endpoint 
+// https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works
+
 function rest_works( $request ) {
 	$type_map = paulawilsondata_get_work_type_map();
 	$post_types = array_values( $type_map );
@@ -80,6 +80,7 @@ function rest_works( $request ) {
 }
 
 // Work Detail Endpoint
+// https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works/exhibition/we-dream-of-life-iris-hu-and-paula-wilson
 function rest_work( $request ) {
 	$type_map = paulawilsondata_get_work_type_map();
 	$type = sanitize_key( $request['type'] );
