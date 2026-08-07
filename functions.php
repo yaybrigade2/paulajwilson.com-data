@@ -5,62 +5,131 @@
 
 
 /*  ******************************************** */
-/*  ANCHOR: Add Custom REST endpoint for PROJECTS
-/*  https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/projects/  
+/*  ANCHOR: Add generic REST endpoints for WORKS
+/*  Collection: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works
+/*  Detail: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works/exhibition/we-dream-of-life-iris-hu-and-paula-wilson
 */
-function rest_projects( $data ) {
-	
-	global $post;
-	
-	$args = [
-		'post_type' => 'project',
-		'posts_per_page' => -1,
-		'orderby'        => 'rand',
-	];	
-	$projects_query = new WP_Query($args);
 
-	$projects = [];
-
-	if ( $projects_query->have_posts() ) : 
-
-		while ( $projects_query->have_posts() ) : $projects_query->the_post(); 
-
-			$id = $post->ID;
-			$project_title = $post->post_title;
-			$slug = $post->post_name;
-			$description = get_field('description');
-			$category = get_field('category');
-
-			$poster_image = get_field('poster_image');
-			$media = get_field('media');
-
-			// PUT IT ALL TOGETHER
-			$projectArray = array(
-					'id' => $id,
-					'title' => $project_title,
-					'projectSlug' => $slug,
-					'description' => $description,
-					'category' => $category,
-					'posterImage' => $poster_image,
-					'media' => $media,
-				);
-			
-			array_push($projects, $projectArray);
-			
-		endwhile; 
-
-	endif;
-
-	$jsonObj = $projects;
-	return $jsonObj;
+function paulawilsondata_get_work_type_map() {
+	return array(
+		'exhibition' => 'exhibition',
+		'painting' => 'painting',
+		'sculpture' => 'sculpture',
+		'film' => 'film',
+		'edition' => 'edition',
+	);
 }
+
+function paulawilsondata_prepare_work_data( $post_id, $include_fields_for_detail = false ) {
+	$post = get_post( $post_id );
+
+	if ( ! $post ) {
+		return null;
+	}
+
+	$work = array(
+		'id' => (int) $post_id,
+		'type' => $post->post_type,
+		'slug' => $post->post_name,
+		'title' => $post->post_title,
+		'displayDate' => get_field( 'display_date', $post_id ),
+		'sortDate' => get_field( 'sort_date', $post_id ),
+		'featuredImage' => get_field( 'featured_image', $post_id ),
+		'featuredVideo' => get_field( 'featured_video', $post_id ),
+		'location' => get_field( 'location', $post_id ),
+	);
+
+	if ( $include_fields_for_detail ) {
+		$work['contentModules'] = get_field( 'content_modules', $post_id );
+	}
+
+	return $work;
+}
+
+// Works Endpoint 
+function rest_works( $request ) {
+	$type_map = paulawilsondata_get_work_type_map();
+	$post_types = array_values( $type_map );
+
+	$args = array(
+		'post_type' => $post_types,
+		'posts_per_page' => -1,
+		'post_status' => 'publish',
+		'orderby' => 'meta_value',
+		'meta_key' => 'sort_date',
+		'order' => 'DESC',
+	);
+
+	$works_query = new WP_Query( $args );
+	$works = array();
+
+	if ( $works_query->have_posts() ) {
+		while ( $works_query->have_posts() ) {
+			$works_query->the_post();
+			$work = paulawilsondata_prepare_work_data( get_the_ID(), false );
+
+			if ( $work ) {
+				$works[] = $work;
+			}
+		}
+	}
+
+	wp_reset_postdata();
+
+	return $works;
+}
+
+// Work Detail Endpoint
+function rest_work( $request ) {
+	$type_map = paulawilsondata_get_work_type_map();
+	$type = sanitize_key( $request['type'] );
+	$slug = sanitize_title( $request['slug'] );
+
+	if ( ! isset( $type_map[ $type ] ) ) {
+		return new WP_Error( 'rest_invalid_type', 'Invalid work type.', array( 'status' => 404 ) );
+	}
+
+	$args = array(
+		'post_type' => $type_map[ $type ],
+		'name' => $slug,
+		'posts_per_page' => 1,
+		'post_status' => 'publish',
+	);
+
+	$work_query = new WP_Query( $args );
+
+	if ( ! $work_query->have_posts() ) {
+		return new WP_Error( 'rest_work_not_found', 'Work not found.', array( 'status' => 404 ) );
+	}
+
+	$work_query->the_post();
+	$work = paulawilsondata_prepare_work_data( get_the_ID(), true );
+	wp_reset_postdata();
+
+	return $work;
+}
+
 add_action( 'rest_api_init', function () {
-  register_rest_route( 'paulawilsondata/v1', '/projects', array(
-	'methods' => 'GET',
-	'callback' => 'rest_projects',
-	'permission_callback' => '__return_true',
-  ));
-});
+	register_rest_route( 'paulawilsondata/v1', '/works', array(
+		'methods' => 'GET',
+		'callback' => 'rest_works',
+		'permission_callback' => '__return_true',
+	) );
+
+	register_rest_route( 'paulawilsondata/v1', '/works/(?P<type>[\w-]+)/(?P<slug>[\w-]+)', array(
+		'methods' => 'GET',
+		'callback' => 'rest_work',
+		'permission_callback' => '__return_true',
+		'args' => array(
+			'type' => array(
+				'required' => true,
+			),
+			'slug' => array(
+				'required' => true,
+			),
+		),
+	) );
+} );
 
 
 /*  ******************************************** */
@@ -169,9 +238,9 @@ add_action( 'rest_api_init', function () {
  * Register Custom endpoints to be cached
  */
 function wprc_add_custom_endpoints( $allowed_endpoints ) {
-	// /wp-json/paulawilsondata/v1/projects
-	if ( ! isset( $allowed_endpoints[ 'paulawilsondata/v1' ] ) || ! in_array( 'projects', $allowed_endpoints[ 'paulawilsondata/v1' ] ) ) {
-		$allowed_endpoints[ 'paulawilsondata/v1' ][] = 'projects';
+	// /wp-json/paulawilsondata/v1/works
+	if ( ! isset( $allowed_endpoints[ 'paulawilsondata/v1' ] ) || ! in_array( 'works', $allowed_endpoints[ 'paulawilsondata/v1' ] ) ) {
+		$allowed_endpoints[ 'paulawilsondata/v1' ][] = 'works';
 	}
 	return $allowed_endpoints;
 }
@@ -184,7 +253,7 @@ function paulawilsondata_flush_rest() {
 	// TODO: Add other endpoints to flush as needed
 	if( is_plugin_active( 'wp-rest-cache/wp-rest-cache.php' ) ) {
 		// https://wordpress.org/support/topic/how-to-flush-cache-on-custom-endpoints/
-		\WP_Rest_Cache_Plugin\Includes\Caching\Caching::get_instance()->delete_cache_by_endpoint( '/data/wp-json/paulawilsondata/v1/projects', 'strict', false );
+		\WP_Rest_Cache_Plugin\Includes\Caching\Caching::get_instance()->delete_cache_by_endpoint( '/data/wp-json/paulawilsondata/v1/works', 'strict', false );
 	}
 }
 add_action( 'save_post',	'paulawilsondata_flush_rest' );
