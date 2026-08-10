@@ -336,3 +336,26 @@ function remove_wp_nodes()
     $wp_admin_bar->remove_node( 'new-media' );
     $wp_admin_bar->remove_node( 'new-user' );
 }
+
+/*  ******************************************** */
+/*  Remove command palette from admin bar (ctrl+k)
+ */
+add_action( 'admin_bar_menu', 'remove_wp_command_palette', 999 );
+function remove_wp_command_palette() {
+	global $wp_admin_bar;
+
+	if ( ! is_object( $wp_admin_bar ) || ! is_admin_bar_showing() ) {
+		return;
+	}
+
+	$wp_admin_bar->remove_node( 'command-palette' );
+	$wp_admin_bar->remove_node( 'wp-admin-bar-command-palette' );
+}
+
+add_action( 'admin_head', function () {
+	if ( ! is_admin_bar_showing() ) {
+		return;
+	}
+
+	echo '<style>#wpadminbar #wp-admin-bar-command-palette { display:none !important; }</style>';
+} );
