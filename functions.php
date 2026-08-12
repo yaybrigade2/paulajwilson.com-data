@@ -5,7 +5,7 @@
 
 
 /*  ******************************************** */
-/*  ANCHOR: Add REST endpoints for WORKS
+/*  ANCHOR: REST endpoints for WORKS
 */
 
 function paulawilsondata_get_work_type_map() {
@@ -185,6 +185,60 @@ add_action( 'rest_api_init', function () {
 
 
 /*  ******************************************** */
+/*  ANCHOR REST for SEARCH
+/*  Example: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/search/paula
+*/
+function rest_search( $data ) {
+    
+    global $post;
+    
+    $search = $data['searchterm'];
+    
+    $custom_query = new WP_Query();
+
+    $custom_query->query_vars['s'] = $search;
+    $custom_query->query_vars['posts_per_page'] = -1; // all
+
+    relevanssi_do_query($custom_query);
+
+    $results = [];
+
+    if ( $custom_query->have_posts() ) : 
+
+       foreach ( $custom_query->posts as $post ) :
+        	
+			$path = $post->post_name;
+
+			if ('page' != $post->post_type) {
+				$path = $post->post_type . '/' . $path;
+			}
+		
+            $result = array(
+                'name' => $post->post_name, /* slug */
+				'title' => $post->post_title,
+				'path' => $path,
+				'posttype' => $post->post_type,
+				'section' => ucwords($post->post_type),
+				'excerpt' => $post->post_excerpt
+            );
+                
+            array_push($results, $result);
+
+        endforeach;
+
+    endif;
+
+	return $results;
+}
+add_action( 'rest_api_init', function () {
+  register_rest_route( 'paulawilsondata/v1', '/search/(?P<searchterm>.+)', array(
+    'methods' => 'GET',
+    'callback' => 'rest_search',
+  ) );
+} );
+
+
+/*  ******************************************** */
 /*  ANCHOR REST for sitemap URLs
 /*  Example: https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/urls
 */
@@ -306,6 +360,10 @@ function paulawilsondata_WYSIWYG_toolbars( $toolbars )
 	// New toolbar: "Very Simple with Link"
 	$toolbars['Very Simple with Link' ] = array();
 	$toolbars['Very Simple with Link' ][1] = array('bold' , 'italic', 'link', 'unlink');
+
+	// New toolbar: "CV"
+	$toolbars['CV' ] = array();
+	$toolbars['CV' ][1] = array('italic', 'link', 'unlink', 'bullist');
 
 	return $toolbars;
 }
