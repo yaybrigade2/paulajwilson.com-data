@@ -44,7 +44,7 @@ function paulawilsondata_prepare_work_data( $post_id, $include_fields_for_detail
 	return $work;
 }
 
-// Works Endpoint 
+// ANCHOR: Works Endpoint 
 // https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works
 
 function rest_works( $request ) {
@@ -79,7 +79,7 @@ function rest_works( $request ) {
 	return $works;
 }
 
-// Work Detail Endpoint
+// ANCHOR: Work Detail Endpoint
 // https://paulawilsondata.yaybrigade.xyz/wp-json/paulawilsondata/v1/works/exhibition/we-dream-of-life-iris-hu-and-paula-wilson
 function rest_work( $request ) {
 	$type_map = paulawilsondata_get_work_type_map();
@@ -260,7 +260,6 @@ function rest_urls( $data ) {
 
 	$results = [];
 
-	// get all designers
 	$args = array(
 		// all post types
 		'post_type' => 'any',
