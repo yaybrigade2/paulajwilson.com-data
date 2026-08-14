@@ -207,10 +207,20 @@ function rest_search( $data ) {
 
        foreach ( $custom_query->posts as $post ) :
         	
+			$section = ucwords($post->post_type);
 			$path = $post->post_name;
 
 			if ('page' != $post->post_type) {
-				$path = $post->post_type . '/' . $path;
+				$path = $post->post_type . 's/' . $path;
+			}
+			// check if this is the homepage
+			if ( 'paula-wilson' == $path ) {
+				$section = 'Homepage';
+				$path = '/';
+			}
+
+			if ( is_front_page($post->ID) ) {
+				$section = 'Homepage';
 			}
 		
             $result = array(
@@ -218,7 +228,7 @@ function rest_search( $data ) {
 				'title' => $post->post_title,
 				'path' => $path,
 				'posttype' => $post->post_type,
-				'section' => ucwords($post->post_type),
+				'section' => $section,
 				'excerpt' => $post->post_excerpt
             );
                 
@@ -246,33 +256,33 @@ function rest_urls( $data ) {
     
     global $post;
 
-	$url_prefix = 'https://xxx'; // TODO: replace with live url
+	$url_prefix = 'https://www.paulajwilson.com';
 
 	$results = [];
 
 	// get all designers
 	$args = array(
-		'post_type' => 'designer',
+		// all post types
+		'post_type' => 'any',
 		'posts_per_page' => -1,
 		'post_status' => 'publish',
-		'fields' => 'post_name',
-		'orderby' => 'meta_value',
-		'meta_key' => 'sort_name',
-		'order' => 'ASC',
 	);
 
-	$designers = get_posts($args);
+	$pages = get_posts($args);
 
-	foreach ($designers as $designer) {
+	foreach ($pages as $page) {
 
-		// ignore year_level=='PETS'
-		if (get_field('year_level', $designer->ID) == 'PETS') {
-			continue;
+		$path = $page->post_name;
+
+		if ('page' != $page->post_type) {
+			$path = $page->post_type . 's/' . $path;
+		}
+		// check if this is the homepage
+		if ( 'paula-wilson' == $path ) {
+			$path = '';
 		}
 
-		$path = 'designer/' . $designer->post_name;
-
-		$result = $url_prefix . $path;
+		$result = $url_prefix . '/' . $path;
 		array_push($results, $result);
 	}
 
